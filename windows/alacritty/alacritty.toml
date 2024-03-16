@@ -1,0 +1,16 @@
+[env]
+TERM = "alacritty"
+
+[shell]
+program = "pwsh"
+
+[font]
+normal = { family = "Hack Nerd Font", style = "Regular" }
+
+[window]
+decorations = "buttonless"
+opacity = 0.8
+
+[window.dimensions]
+columns = 115
+lines = 35
