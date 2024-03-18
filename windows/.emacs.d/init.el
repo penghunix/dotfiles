@@ -1,3 +1,9 @@
+;; ENCODING -------------
+(when (fboundp 'set-charset-priority)
+  (set-charset-priority 'unicode))       ; pretty
+(prefer-coding-system 'utf-8)            ; pretty
+(setq locale-coding-system 'utf-8)       ; please
+
 (menu-bar-mode -1)
 (tool-bar-mode -1)
 (tooltip-mode -1)
@@ -13,7 +19,7 @@
 
 ;; Set frame transpaency
 (set-frame-parameter (selected-frame) 'alpha penguin/frame-transparency)
-(add-to-list 'default-frame-alist '(alpha . ,penguin/frame-transparency))
+(add-to-list 'default-frame-alist '(alpha . penguin/frame-transparency))
 ;; (set-frame-parameter (selected-frame) 'fullscreen 'maximized)
 
 ;; Minor modes
@@ -79,8 +85,8 @@
 (setq use-package-always-ensure t)
 ;; (setq use-package-verbose nil)
 
-;; (setq custom-file (expand-file-name "custom.el" user-emacs-directory))
-;; (load custom-file)
+(setq custom-file (expand-file-name "custom.el" user-emacs-directory))
+(load custom-file)
 
 ;; Disable line numbers for some modes
 (dolist (mode '(org-mode-hook
