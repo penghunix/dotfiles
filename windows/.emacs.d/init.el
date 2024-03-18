@@ -12,14 +12,18 @@
 (setq inhibit-startup-message t)
 (setq visible-bell t)
 
-(defvar penguin/default-font-size 100)
-(defvar penguin/default-variable-font-size 100)
+(defvar penguin/default-font-size 110)
+(defvar penguin/default-variable-font-size 110)
 (defvar penguin/frame-transparency '(90 . 90))
-(defvar penguin/home (concat (getenv "HOME") "/") "My home dir")
+(defvar penguin/home "C:/Users/es-kyeongsoo" "My home dir")
+(defvar penguin/projects (concat penguin/home "/Projects") "My Projects Directory")
+
+(setq custom-file (expand-file-name "custom.el" user-emacs-directory))
+(load custom-file)
 
 ;; Set frame transpaency
 (set-frame-parameter (selected-frame) 'alpha penguin/frame-transparency)
-(add-to-list 'default-frame-alist '(alpha . penguin/frame-transparency))
+;; (add-to-list 'default-frame-alist '(alpha . ,penguin/frame-transparency))
 ;; (set-frame-parameter (selected-frame) 'fullscreen 'maximized)
 
 ;; Minor modes
@@ -28,9 +32,10 @@
 (global-auto-revert-mode 1)
 
 ;; Fonts
-(setq text-scale-mode-step 1.2)
-(set-frame-font "0xProto Nerd Font" nil t)
-(set-face-attribute 'default nil :family "0xProto Nerd Font" :weight 'regular :height 100)
+;; (setq text-scale-mode-step 1.2)
+;; (set-frame-font "Hack Nerd Font" nil t)
+(set-face-attribute 'default nil :family "Hack Nerd Font" :height penguin/default-font-size)
+;; (set-face-attribute 'default nil :family "Hack Nerd Font" :weight 'regular :height 120)
 
 ;; Interaction
 (setq use-short-answers t)
@@ -85,9 +90,6 @@
 (setq use-package-always-ensure t)
 ;; (setq use-package-verbose nil)
 
-(setq custom-file (expand-file-name "custom.el" user-emacs-directory))
-(load custom-file)
-
 ;; Disable line numbers for some modes
 (dolist (mode '(org-mode-hook
 				term-mode-hook
@@ -95,10 +97,11 @@
 				treemacs-mode-hook
 				eshell-mode-hook))
   (add-hook mode (lambda () (display-line-numbers-mode 0)))
-  (add-hook mode (lambda () (evil-mode 0))))
+  (add-hook mode (lambda () (evil-local-mode 0))))
 
 (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
 
+;; general
 (use-package general
   :after evil
   :config
@@ -111,6 +114,12 @@
    "t" '(:ignore t :which-key "toggles")
    "tt" '(counsel-load-theme :which-key "choose theme")))
 
+(general-evil-setup)
+(general-imap "j"
+  (general-key-dispatch 'self-insert-command
+    :timeout 0.25
+    "k" 'evil-normal-state)) 
+
 (use-package evil
   :init
   (setq evil-want-integration t)
@@ -120,7 +129,10 @@
   :config
   (evil-mode 1)
   (define-key evil-insert-state-map (kbd "C-g") 'evil-normal-state)
+  ;; (define-key evil-insert-state-map (kbd "jk") 'evil-normal-state) ;; does not work as expected
   (define-key evil-insert-state-map (kbd "C-h") 'evil-delete-backward-char-and-join)
+
+  (setq-default evil-escape-key-sequence "jk")
 
   (evil-global-set-key 'motion "j" 'evil-next-visual-line)
   (evil-global-set-key 'motion "k" 'evil-previous-visual-line)
@@ -211,3 +223,74 @@
 	(append '(abbreviate-file-name) recentf-filename-handlers))
   (recentf-mode))
 
+
+(defun efs/configure-eshell ()
+  ;; Save command history when commands are entered
+  (add-hook 'eshell-pre-command-hook 'eshell-save-some-history)
+
+  ;; Truncate buffer for performance
+  (add-to-list 'eshell-output-filter-functions 'eshell-truncate-buffer)
+
+  ;; Bind some useful keys for evil-mode
+  (evil-define-key '(normal insert visual) eshell-mode-map (kbd "C-r") 'counsel-esh-history)
+  (evil-define-key '(normal insert visual) eshell-mode-map (kbd "<home>") 'eshell-bol)
+  (evil-normalize-keymaps)
+
+  (setq eshell-history-size         10000
+        eshell-buffer-maximum-lines 10000
+        eshell-hist-ignoredups t
+        eshell-scroll-to-bottom-on-input t))
+
+(use-package eshell-git-prompt
+  :after eshell)
+
+(use-package eshell
+  :hook (eshell-first-time-mode . efs/configure-eshell)
+  :config
+
+  (with-eval-after-load 'esh-opt
+    (setq eshell-destroy-buffer-when-process-dies t)
+    (setq eshell-visual-commands '("htop" "zsh" "vim")))
+
+  (eshell-git-prompt-use-theme 'powerline))
+
+;; straight.el
+(defvar bootstrap-version)
+(let ((bootstrap-file
+       (expand-file-name
+        "straight/repos/straight.el/bootstrap.el"
+        (or (bound-and-true-p straight-base-dir)
+            user-emacs-directory)))
+      (bootstrap-version 7))
+  (unless (file-exists-p bootstrap-file)
+    (with-current-buffer
+        (url-retrieve-synchronously
+         "https://raw.githubusercontent.com/radian-software/straight.el/develop/install.el"
+         'silent 'inhibit-cookies)
+      (goto-char (point-max))
+      (eval-print-last-sexp)))
+  (load bootstrap-file nil 'nomessage))
+
+(setq openai-api-key (getenv "OPENAI_APIKEY"))
+(use-package c3po
+  :straight (:host github :repo "d1egoaz/c3po.el")
+  :config
+  (setq c3po-api-key openai-api-key))
+
+;; projectile
+(use-package projectile
+  :diminish projectile-mode
+  :config (projectile-mode)
+  :custom ((projectile-completion-system 'ivy))
+  :ensure t
+  :bind (:map projectile-mode-map
+              ("s-p" . projectile-command-map)
+              ("C-c p" . projectile-command-map))
+  :init
+  (when (file-directory-p penguin/projects)
+	(setq projectile-project-search-path '(penguin/projects)))
+  (setq projectile-switch-project-action #'projectile-dired))
+
+(use-package counsel-projectile
+  :after projectile
+  :config (counsel-projectile-mode))
