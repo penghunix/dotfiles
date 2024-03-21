@@ -1,0 +1,9 @@
+* Emacs Configuration
+
+** LSP Mode
+
+'python-language-server' is deprecated. Use 'python-lsp-server'
+
+#+begin_src shell
+  pip install python-lsp-server
+#+end_src
